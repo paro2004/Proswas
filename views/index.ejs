@@ -1,0 +1,116 @@
+<div class="content-wrapper">
+    <div class="cards-grid">
+        <!-- Patient & X-ray Input Card -->
+        <section class="app-card">
+            <h2 class="card-heading">Patient & X-ray Input</h2>
+
+            <% if (error) { %>
+                <div class="custom-alert error-banner">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    <span><%= error %></span>
+                </div>
+            <% } %>
+
+            <form action="/analyze" method="POST" enctype="multipart/form-data" id="diagnosticForm">
+                <div class="form-group">
+                    <label class="form-label" for="patient_name">Patient name <span class="optional">(optional)</span></label>
+                    <input type="text" id="patient_name" name="patient_name" class="custom-input" 
+                           placeholder="e.g. Anita Roy" value="<%= formData.patient_name || '' %>">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="age">Age</label>
+                    <input type="number" id="age" name="age" class="custom-input" 
+                           placeholder="e.g. 54" value="<%= formData.age || '' %>" min="1" max="120">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="patient_id">Patient ID</label>
+                    <input type="text" id="patient_id" name="patient_id" class="custom-input" 
+                           placeholder="e.g. 20418" value="<%= formData.patient_id || '' %>">
+                </div>
+
+                <!-- Hidden file input triggered by upload preview box -->
+                <input type="file" id="xray_image" name="xray_image" accept="image/*" class="d-none" required>
+
+                <!-- Preview / Upload Dropzone Box -->
+                <div class="upload-box" id="dropzoneBox" onclick="document.getElementById('xray_image').click()">
+                    <div id="previewContainer" class="<%= result ? '' : 'd-none' %>">
+                        <img id="imagePreview" 
+                             src="<%= result ? 'data:image/jpeg;base64,' + result.input_base64 : '#' %>" 
+                             alt="Input Radiograph">
+                    </div>
+                    <div id="uploadPlaceholder" class="<%= result ? 'd-none' : '' %>">
+                        <i class="bi bi-cloud-arrow-up-fill upload-icon"></i>
+                        <p class="upload-text">Click to choose or drop Chest X-ray image</p>
+                        <span class="upload-subtext">JPEG, PNG formats supported</span>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    <span id="btnText">Analyze X-ray</span>
+                    <span id="btnSpinner" class="spinner-border spinner-border-sm d-none ms-2" role="status"></span>
+                </button>
+            </form>
+        </section>
+
+        <!-- Assessment Result Card -->
+        <section class="app-card">
+            <h2 class="card-heading">Assessment Result</h2>
+
+            <% if (result) { %>
+                <% const isPneumonia = result.prediction === 'PNEUMONIA'; %>
+
+                <!-- Diagnosis Banner -->
+                <div class="status-banner <%= isPneumonia ? 'banner-pneumonia' : 'banner-normal' %>">
+                    <div class="status-icon-wrapper">
+                        <% if (isPneumonia) { %>
+                            <i class="bi bi-exclamation-circle-fill status-icon-pneumonia"></i>
+                        <% } else { %>
+                            <i class="bi bi-check-circle-fill status-icon-normal"></i>
+                        <% } %>
+                    </div>
+                    <div class="status-text-wrapper">
+                        <h3 class="status-title">
+                            <%= isPneumonia ? 'Needs a closer look - Signs of pneumonia detected' : 'Normal - No signs of pneumonia detected' %>
+                        </h3>
+                    </div>
+                </div>
+
+                <!-- Confidence Badge -->
+                <div class="confidence-pill <%= isPneumonia ? 'confidence-pneumonia' : 'confidence-normal' %>">
+                    <%= result.confidence_percent %>% confidence
+                </div>
+
+                <!-- Grad-CAM Heatmap Image Container -->
+                <div class="heatmap-card">
+                    <div class="heatmap-wrapper">
+                        <img src="data:image/jpeg;base64,<%= result.overlay_base64 %>" alt="Grad-CAM Heatmap Overlay" class="heatmap-img">
+                        <span class="heatmap-pill">Grad-CAM Heatmap Overlay</span>
+                    </div>
+                </div>
+
+                <!-- Analyze Another Scan Button -->
+                <div class="mt-4 text-center">
+                    <a href="/" class="reset-btn">
+                        Analyze another scan
+                    </a>
+                </div>
+
+            <% } else { %>
+                <!-- Empty Placeholder (Lungs sign removed) -->
+                <div class="empty-state">
+                    <p class="empty-title">Awaiting analysis</p>
+                </div>
+            <% } %>
+        </section>
+    </div>
+
+    <!-- Note for the Doctor Bottom Card -->
+    <div class="doctor-note-card">
+        <h4 class="doctor-note-title">A note for the doctor</h4>
+        <p class="doctor-note-text">
+            Please note: This result comes from an AI model and is intended as a decision-support aid, not a definitive diagnosis. Always verify with your own clinical judgment, patient history, and further diagnostic tests.
+        </p>
+    </div>
+</div>
