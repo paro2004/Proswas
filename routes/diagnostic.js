@@ -4,11 +4,11 @@ const multer = require('multer');
 const axios = require('axios');
 const FormData = require('form-data');
 
-// In-memory buffer storage
+// In-memory file processing
 const storage = multer.memoryStorage();
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+    limits: { fileSize: 10 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
         if (file.mimetype.startsWith('image/')) {
             cb(null, true);
@@ -18,13 +18,15 @@ const upload = multer({
     }
 });
 
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://127.0.0.1:5000/predict';
+// Clean base URL to prevent double '/predict/predict' bugs
+const RAW_URL = process.env.AI_SERVICE_URL || 'http://127.0.0.1:5000';
+const BASE_AI_URL = RAW_URL.replace(/\/predict\/?$/, '').replace(/\/+$/, '');
+const AI_PREDICT_ENDPOINT = `${BASE_AI_URL}/predict`;
 
-// Proactive wake-up call to spin up the AI microservice in background when user opens the page
+// GET: Wake backend immediately when user loads the page
 router.get('/', (req, res) => {
-    // Fire-and-forget ping to wake Flask up before the user even uploads an image
-    const pingUrl = AI_SERVICE_URL.replace('/predict', '/');
-    axios.get(pingUrl, { timeout: 5000 }).catch(() => {});
+    // Proactive background ping so it wakes up before user finishes uploading
+    axios.get(`${BASE_AI_URL}/`, { timeout: 8000 }).catch(() => {});
 
     res.render('index', {
         result: null,
@@ -33,23 +35,23 @@ router.get('/', (req, res) => {
     });
 });
 
-// Helper function to send scan with automatic retry on cold start
-async function sendToAI(form, retries = 2) {
-    for (let attempt = 1; attempt <= retries; attempt++) {
+// Helper: Post with automatic retry for cold starts
+async function queryAIWithRetry(form, maxAttempts = 2) {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
-            return await axios.post(AI_SERVICE_URL, form, {
+            return await axios.post(AI_PREDICT_ENDPOINT, form, {
                 headers: { ...form.getHeaders() },
-                timeout: 90000 // 90 seconds accommodates full Render container spin-up
+                timeout: 90000 // 90s to comfortably tolerate wake-up latency
             });
         } catch (err) {
-            if (attempt === retries) throw err;
-            console.log(`AI service spin-up detected. Retrying attempt ${attempt + 1}...`);
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            console.warn(`AI service call failed on attempt ${attempt}:`, err.message);
+            if (attempt === maxAttempts) throw err;
+            await new Promise(resolve => setTimeout(resolve, 4000));
         }
     }
 }
 
-// POST: Process diagnosis
+// POST: Run analysis
 router.post('/analyze', upload.single('xray_image'), async (req, res) => {
     const { patient_name, age, patient_id } = req.body;
     const formData = { patient_name, age, patient_id };
@@ -69,7 +71,7 @@ router.post('/analyze', upload.single('xray_image'), async (req, res) => {
             contentType: req.file.mimetype
         });
 
-        const response = await sendToAI(form);
+        const response = await queryAIWithRetry(form);
         const { prediction, confidence_percent, overlay_base64 } = response.data;
 
         res.render('index', {
@@ -84,7 +86,7 @@ router.post('/analyze', upload.single('xray_image'), async (req, res) => {
         });
 
     } catch (err) {
-        console.error('AI Service Communication Error:', err.message);
+        console.error('Final AI error:', err.message);
         let errorMsg = 'Failed to analyze radiograph. Please ensure the AI engine is running.';
         if (err.response && err.response.data && err.response.data.error) {
             errorMsg = err.response.data.error;
