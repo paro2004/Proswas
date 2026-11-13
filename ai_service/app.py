@@ -56,12 +56,12 @@ def build_model():
     model = models.resnet18(weights=None)
     num_ftrs = model.fc.in_features
     
-    # Correct dimensions matching your checkpoint (128 hidden units)
+    # Correct structure matching your checkpoint: 128 hidden units, 1 single output class
     model.fc = nn.Sequential(
         nn.Linear(num_ftrs, 128),
         nn.ReLU(),
         nn.Dropout(0.5),
-        nn.Linear(128, 2)
+        nn.Linear(128, 1)
     )
 
     if os.path.exists(MODEL_PATH):
@@ -108,7 +108,7 @@ def generate_gradcam(model, input_tensor, target_class_idx, original_pil):
     try:
         model.zero_grad()
         output = model(input_tensor)
-        score = output[0, target_class_idx]
+        score = output[0, 0]
         score.backward()
 
         grads = gradients[0][0]
@@ -148,3 +148,44 @@ def health_check():
 def predict():
     if 'file' not in request.files:
         return jsonify({'error': 'No image file provided in request.'}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'Empty file selected.'}), 400
+
+    try:
+        image_bytes = file.read()
+        pil_image = Image.open(io.BytesIO(image_bytes))
+
+        is_valid, error_message = is_valid_radiograph(pil_image)
+        if not is_valid:
+            return jsonify({'error': error_message}), 400
+
+        rgb_image = pil_image.convert('RGB')
+        input_tensor = preprocess(rgb_image).unsqueeze(0).to(DEVICE)
+
+        with torch.no_grad():
+            logits = model(input_tensor)
+            prob = torch.sigmoid(logits).item()
+
+        if prob >= CONFIDENCE_THRESHOLD:
+            prediction = 'PNEUMONIA'
+            confidence_percent = round(prob * 100, 1)
+        else:
+            prediction = 'NORMAL'
+            confidence_percent = round((1 - prob) * 100, 1)
+
+        overlay_base64 = generate_gradcam(model, input_tensor, 0, rgb_image)
+
+        return jsonify({
+            'prediction': prediction,
+            'confidence_percent': confidence_percent,
+            'overlay_base64': overlay_base64
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': f'Inference error: {str(e)}'}), 500
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
