@@ -16,20 +16,31 @@ DEVICE = torch.device('cpu')
 CLASS_NAMES = ['NORMAL', 'PNEUMONIA']
 CONFIDENCE_THRESHOLD = 0.60
 
-# Model weights path
-MODEL_PATH = 'pneumonia_resnet18.pth'
+# Check all possible locations for your exact weights file name: resnet18_pneumonia.pth
+possible_model_paths = [
+    os.path.join(os.path.dirname(__file__), 'resnet18_pneumonia.pth'),
+    'resnet18_pneumonia.pth',
+    '/opt/render/project/src/ai_service/resnet18_pneumonia.pth',
+    'ai_service/resnet18_pneumonia.pth'
+]
 
-# AUTOMATIC FALLBACK: If the weights file doesn't exist locally, download it automatically!
-MODEL_URL = "https://github.com/paro2004/Proshwas/raw/main/ai_service/pneumonia_resnet18.pth"  # Or your public link
+MODEL_URL = "https://github.com/paro2004/Proshwas/raw/main/ai_service/resnet18_pneumonia.pth"
+MODEL_PATH = 'resnet18_pneumonia.pth'
 
 def ensure_model_weights():
-    if not os.path.exists(MODEL_PATH):
-        print(f"Model weights not found locally. Downloading from repository...")
-        try:
-            urllib.request.urlretrieve(MODEL_URL, MODEL_PATH)
-            print("Model weights downloaded successfully!")
-        except Exception as e:
-            print(f"Warning: Could not auto-download weights: {e}")
+    global MODEL_PATH
+    for path in possible_model_paths:
+        if os.path.exists(path):
+            MODEL_PATH = path
+            print(f"Found model weights at: {MODEL_PATH}")
+            return
+    
+    print(f"Model weights not found locally. Downloading from repository...")
+    try:
+        urllib.request.urlretrieve(MODEL_URL, MODEL_PATH)
+        print("Model weights downloaded successfully!")
+    except Exception as e:
+        print(f"Warning: Could not auto-download weights: {e}")
 
 ensure_model_weights()
 
@@ -51,6 +62,7 @@ def build_model():
     if os.path.exists(MODEL_PATH):
         state_dict = torch.load(MODEL_PATH, map_location=DEVICE)
         model.load_state_dict(state_dict)
+        print("Model weights loaded successfully into ResNet-18!")
     else:
         raise FileNotFoundError(f"Model weights could not be loaded at {MODEL_PATH}")
 
