@@ -6,17 +6,22 @@ const app = express();
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// Middleware for parsing requests and static assets
+// Middleware
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Favicon 204 handler
+// Favicon handler
 app.get('/favicon.ico', (req, res) => res.status(204).end());
 
 // Root Route
 app.get('/', (req, res) => {
-    res.render('index', { error: null, success: null, formData: {} });
+    res.render('index', { 
+        error: null, 
+        success: null, 
+        formData: {}, 
+        result: null 
+    });
 });
 
 // Mount Diagnostic Routes
@@ -27,9 +32,14 @@ try {
     console.error('Error loading diagnostic routes:', err.message);
 }
 
-// Analyze Route view handler
+// Fallback Analyze Route
 app.get('/analyze', (req, res) => {
-    res.render('index', { error: null, success: null, formData: {} });
+    res.render('index', { 
+        error: null, 
+        success: null, 
+        formData: {}, 
+        result: null 
+    });
 });
 
 // 404 Handler
@@ -37,13 +47,13 @@ app.use((req, res) => {
     res.status(404).send('Page not found.');
 });
 
-// Central Error Handler
+// Error Handler
 app.use((err, req, res, next) => {
     console.error('Server Error:', err.stack);
     res.status(500).send('Internal Server Error: ' + err.message);
 });
 
-// Server Listen (Render injects PORT automatically)
+// Server Listen
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
     console.log(`Proshwas Frontend Server running on port ${PORT}`);
