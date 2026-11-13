@@ -4,97 +4,171 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Proshwas - AI Chest X-Ray Screening</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <h1>🩺 Proshwas</h1>
-            <p>AI-Powered Chest Radiograph Analysis & Diagnostic Assistant</p>
-        </header>
-
-        <% if (typeof error !== 'undefined' && error) { %>
-            <div class="alert alert-danger">
-                <%= error %>
+    <!-- App Header -->
+    <header class="app-header">
+        <div class="header-container">
+            <div class="brand">
+                <i class="fa-solid fa-lungs brand-icon"></i>
+                <h1 class="brand-title">Proshwas</h1>
             </div>
-        <% } %>
+            <p style="color: #475569; margin-top: 6px; font-size: 1.05rem;">AI-Powered Chest Radiograph Analysis & Diagnostic Assistant</p>
+        </div>
+        <hr class="header-divider">
+    </header>
 
-        <% if (typeof success !== 'undefined' && success) { %>
-            <div class="alert alert-success">
-                <%= success %>
-            </div>
-        <% } %>
+    <!-- Main Widescreen Content -->
+    <main class="main-content">
+        <div class="content-wrapper">
 
-        <div class="main-grid">
-            <!-- Input Form Section -->
-            <div class="form-card">
-                <h2>Patient & X-ray Input</h2>
-                <form action="/analyze" method="POST" enctype="multipart/form-data">
-                    <div class="form-group">
-                        <label for="patient_name">Patient Name (optional)</label>
-                        <input type="text" id="patient_name" name="patient_name" 
-                               value="<%= (typeof formData !== 'undefined' && formData && formData.patient_name) ? formData.patient_name : '' %>" 
-                               placeholder="e.g. Anita Roy">
-                    </div>
+            <!-- Global Error Banner if present -->
+            <% if (typeof error !== 'undefined' && error) { %>
+                <div class="custom-alert error-banner">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <span><%= error %></span>
+                </div>
+            <% } %>
 
-                    <div class="form-group">
-                        <label for="age">Age</label>
-                        <input type="number" id="age" name="age" 
-                               value="<%= (typeof formData !== 'undefined' && formData && formData.age) ? formData.age : '' %>" 
-                               placeholder="e.g. 54">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="patient_id">Patient ID</label>
-                        <input type="text" id="patient_id" name="patient_id" 
-                               value="<%= (typeof formData !== 'undefined' && formData && formData.patient_id) ? formData.patient_id : '' %>" 
-                               placeholder="e.g. 20418">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="file">Chest X-ray Image</label>
-                        <input type="file" id="file" name="file" accept="image/jpeg, image/png" required>
-                    </div>
-
-                    <button type="submit" class="btn-submit">Analyze X-ray</button>
-                </form>
-            </div>
-
-            <!-- Assessment Result Section -->
-            <div class="result-card">
-                <h2>Assessment Result</h2>
+            <div class="cards-grid">
                 
-                <% if (typeof result !== 'undefined' && result && result.prediction) { %>
-                    <div class="result-box">
-                        <% if (result.prediction === 'PNEUMONIA') { %>
-                            <div class="alert alert-danger">Needs a closer look – Signs of pneumonia detected</div>
-                            <div class="badge badge-pneumonia"><%= result.confidence_percent %>% confidence</div>
-                        <% } else { %>
-                            <div class="alert alert-success">Normal Radiograph</div>
-                            <div class="badge badge-normal"><%= result.confidence_percent %>% confidence</div>
-                        <% } %>
+                <!-- Left Card: Input Form -->
+                <div class="app-card">
+                    <h2 class="card-heading">Patient & X-ray Input</h2>
+                    
+                    <form action="/analyze" method="POST" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label class="form-label" for="patient_name">Patient Name <span class="optional">(optional)</span></label>
+                            <input type="text" id="patient_name" name="patient_name" class="custom-input"
+                                   value="<%= (typeof formData !== 'undefined' && formData && formData.patient_name) ? formData.patient_name : '' %>" 
+                                   placeholder="e.g. Anita Roy">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="age">Age</label>
+                            <input type="number" id="age" name="age" class="custom-input"
+                                   value="<%= (typeof formData !== 'undefined' && formData && formData.age) ? formData.age : '' %>" 
+                                   placeholder="e.g. 54">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="patient_id">Patient ID</label>
+                            <input type="text" id="patient_id" name="patient_id" class="custom-input"
+                                   value="<%= (typeof formData !== 'undefined' && formData && formData.patient_id) ? formData.patient_id : '' %>" 
+                                   placeholder="e.g. 20418">
+                        </div>
+
+                        <div class="form-label" style="margin-bottom: 8px;">Chest X-ray Image</div>
                         
-                        <% if (result.overlay_base64) { %>
-                            <div class="heatmap-container">
-                                <img src="data:image/png;base64,<%= result.overlay_base64 %>" alt="Grad-CAM Heatmap Overlay">
-                                <div class="badge-overlay">Grad-CAM Heatmap Overlay</div>
+                        <!-- Upload Box -->
+                        <div class="upload-box" onclick="document.getElementById('file').click();">
+                            <div id="uploadPlaceholder">
+                                <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+                                <div class="upload-text">Click to upload or drag & drop</div>
+                                <div class="upload-subtext">Supports JPEG, PNG radiographs</div>
+                            </div>
+                            <div id="previewContainer" style="display: none;">
+                                <img id="imagePreview" src="" alt="X-Ray Preview">
+                            </div>
+                        </div>
+                        <input type="file" id="file" name="file" accept="image/jpeg, image/png" style="display: none;" onchange="previewImage(event)" required>
+
+                        <button type="submit" class="submit-btn">
+                            <i class="fa-solid fa-stethoscope" style="margin-right: 8px;"></i> Analyze X-ray
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Right Card: Assessment Result / Empty State -->
+                <div class="app-card">
+                    <h2 class="card-heading">Assessment Result</h2>
+
+                    <% if (typeof result !== 'undefined' && result && result.prediction) { %>
+                        
+                        <!-- Status Banner -->
+                        <% if (result.prediction === 'PNEUMONIA') { %>
+                            <div class="status-banner banner-pneumonia">
+                                <div class="status-icon-wrapper">
+                                    <i class="fa-solid fa-circle-exclamation status-icon-pneumonia"></i>
+                                </div>
+                                <div>
+                                    <h3 class="status-title">Needs a closer look – Signs of pneumonia detected</h3>
+                                </div>
+                            </div>
+                            <div class="confidence-pill confidence-pneumonia">
+                                <i class="fa-solid fa-chart-pie" style="margin-right: 4px;"></i> <%= result.confidence_percent %>% confidence
+                            </div>
+                        <% } else { %>
+                            <div class="status-banner banner-normal">
+                                <div class="status-icon-wrapper">
+                                    <i class="fa-solid fa-circle-check status-icon-normal"></i>
+                                </div>
+                                <div>
+                                    <h3 class="status-title">Normal Radiograph</h3>
+                                </div>
+                            </div>
+                            <div class="confidence-pill confidence-normal">
+                                <i class="fa-solid fa-chart-pie" style="margin-right: 4px;"></i> <%= result.confidence_percent %>% confidence
                             </div>
                         <% } %>
 
-                        <!-- Action Buttons: Analyze another scan & Download Report PDF -->
-                        <div style="display: flex; gap: 10px; margin-top: 20px;">
-                            <a href="/" class="btn-submit" style="flex: 1; text-align: center; text-decoration: none; box-sizing: border-box;">Analyze another scan</a>
-                            <button onclick="window.print()" class="btn-submit" style="flex: 1; text-align: center; background-color: #28a745; cursor: pointer; border: none;">Download Report PDF</button>
+                        <!-- Heatmap Section -->
+                        <% if (result.overlay_base64) { %>
+                            <div class="heatmap-card">
+                                <div class="heatmap-wrapper">
+                                    <img src="data:image/png;base64,<%= result.overlay_base64 %>" alt="Grad-CAM Heatmap" class="heatmap-img">
+                                    <span class="heatmap-pill"><i class="fa-solid fa-eye" style="margin-right: 4px;"></i> Grad-CAM Heatmap Overlay</span>
+                                </div>
+                            </div>
+                        <% } %>
+
+                        <!-- Action Buttons: Analyze Another Scan & Download Report PDF -->
+                        <div style="display: flex; gap: 12px; margin-top: 24px;">
+                            <a href="/" class="reset-btn" style="flex: 1;">
+                                <i class="fa-solid fa-rotate-right" style="margin-right: 6px;"></i> Analyze another scan
+                            </a>
+                            <button onclick="window.print()" class="submit-btn" style="flex: 1; border-radius: 999px; text-decoration: none;">
+                                <i class="fa-solid fa-file-pdf" style="margin-right: 6px;"></i> Download Report PDF
+                            </button>
                         </div>
-                    </div>
-                <% } else { %>
-                    <div class="placeholder-text">
-                        <p><em>Awaiting analysis...</em></p>
-                        <p>Upload a chest X-ray on the left and click analyze to view diagnostics and heatmap explanations.</p>
-                    </div>
-                <% } %>
+
+                    <% } else { %>
+                        <!-- Empty State -->
+                        <div class="empty-state">
+                            <div class="empty-title">Awaiting analysis...</div>
+                            <div class="empty-subtitle">Upload a chest X-ray on the left and click analyze to view diagnostics and heatmap explanations.</div>
+                        </div>
+                    <% } %>
+
+                </div>
+
             </div>
+
+            <!-- Bottom Disclaimer Note -->
+            <div class="doctor-note-card">
+                <div class="doctor-note-title"><i class="fa-solid fa-triangle-exclamation" style="margin-right: 6px; color: var(--green-dark);"></i> Clinical Disclaimer</div>
+                <p class="doctor-note-text">Proshwas is an AI-powered assistive diagnostic tool intended to aid preliminary radiological evaluations. Final medical diagnosis, treatment plans, and clinical decisions must always be validated and confirmed by qualified medical professionals.</p>
+            </div>
+
         </div>
-    </div>
+    </main>
+
+    <!-- Client-side image preview script -->
+    <script>
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('imagePreview').src = e.target.result;
+                    document.getElementById('uploadPlaceholder').style.display = 'none';
+                    document.getElementById('previewContainer').style.display = 'flex';
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+    </script>
 </body>
 </html>
