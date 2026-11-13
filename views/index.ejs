@@ -15,7 +15,8 @@
                 <i class="fa-solid fa-lungs brand-icon"></i>
                 <h1 class="brand-title">Proshwas</h1>
             </div>
-            <p style="color: #475569; margin-top: 6px; font-size: 1.05rem;">AI-Powered Chest Radiograph Analysis & Diagnostic Assistant</p>
+            <!-- Change 1: Green text and shifted slightly to the right -->
+            <p style="color: var(--green-dark); margin-top: 6px; margin-left: 12px; font-size: 1.05rem; font-weight: 600;">AI-Powered Chest Radiograph Analysis & Diagnostic Assistant</p>
         </div>
         <hr class="header-divider">
     </header>
@@ -75,8 +76,9 @@
                         </div>
                         <input type="file" id="file" name="file" accept="image/jpeg, image/png" style="display: none;" onchange="previewImage(event)" required>
 
+                        <!-- Change 3: Analyze button without stethoscope icon -->
                         <button type="submit" class="submit-btn">
-                            <i class="fa-solid fa-stethoscope" style="margin-right: 8px;"></i> Analyze X-ray
+                            Analyze X-ray
                         </button>
                     </form>
                 </div>
@@ -135,10 +137,9 @@
                         </div>
 
                     <% } else { %>
-                        <!-- Empty State -->
+                        <!-- Change 2: Empty state with subtitle text removed -->
                         <div class="empty-state">
                             <div class="empty-title">Awaiting analysis...</div>
-                            <div class="empty-subtitle">Upload a chest X-ray on the left and click analyze to view diagnostics and heatmap explanations.</div>
                         </div>
                     <% } %>
 
