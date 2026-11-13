@@ -4,7 +4,10 @@ const multer = require('multer');
 const axios = require('axios');
 const FormData = require('form-data');
 
+// Configure multer memory storage
 const upload = multer({ storage: multer.memoryStorage() });
+
+// Explicitly point to your live Render AI backend URL
 const AI_URL = process.env.AI_SERVICE_URL || 'https://proshwas-ai.onrender.com';
 
 router.post('/analyze', upload.single('file'), async (req, res) => {
@@ -24,12 +27,15 @@ router.post('/analyze', upload.single('file'), async (req, res) => {
             contentType: req.file.mimetype,
         });
 
+        // Forward request directly to Python Flask AI backend /predict endpoint
         const response = await axios.post(`${AI_URL}/predict`, formData, {
-            headers: { ...formData.getHeaders() },
-            timeout: 90000 
+            headers: {
+                ...formData.getHeaders()
+            },
+            timeout: 90000 // 90-second timeout for Render cold starts
         });
 
-        // Pass patient metadata alongside result so the report can use it
+        // Attach user metadata back for rendering
         const analysisResult = {
             ...response.data,
             patient_name: req.body.patient_name || 'N/A',
@@ -47,7 +53,7 @@ router.post('/analyze', upload.single('file'), async (req, res) => {
     } catch (error) {
         console.error('AI Service Communication Error:', error.message);
         
-        const errorMsg = error.response?.data?.error || 'AI engine is waking up from sleep mode. Please wait 30 seconds and try clicking Analyze again.';
+        const errorMsg = error.response?.data?.error || 'Failed to connect to AI backend. Please ensure the AI service is awake and try again.';
         
         return res.render('index', {
             error: errorMsg,
