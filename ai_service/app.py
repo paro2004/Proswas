@@ -11,12 +11,27 @@ from torchvision import models, transforms
 
 app = Flask(__name__)
 
-# Configuration & Robust Model Path Resolution
+# Configuration & Multi-Path Robust Model Resolution
 DEVICE = torch.device('cpu')
-DEFAULT_MODEL_PATH = os.path.join(os.path.dirname(__file__), 'pneumonia_resnet18.pth')
-MODEL_PATH = os.environ.get('MODEL_PATH', DEFAULT_MODEL_PATH)
 CLASS_NAMES = ['NORMAL', 'PNEUMONIA']
 CONFIDENCE_THRESHOLD = 0.60  # Calibrated threshold to reduce false positives
+
+# Automatically search multiple fallback locations for model weights on Render/Local
+possible_model_paths = [
+    os.path.join(os.path.dirname(__file__), 'pneumonia_resnet18.pth'),
+    'pneumonia_resnet18.pth',
+    '/opt/render/project/src/ai_service/pneumonia_resnet18.pth',
+    'ai_service/pneumonia_resnet18.pth'
+]
+
+MODEL_PATH = os.environ.get('MODEL_PATH', None)
+if not MODEL_PATH:
+    for path in possible_model_paths:
+        if os.path.exists(path):
+            MODEL_PATH = path
+            break
+    if not MODEL_PATH:
+        MODEL_PATH = possible_model_paths[0]  # Default fallback
 
 # Preprocessing pipeline matching training validation transforms
 preprocess = transforms.Compose([
@@ -30,7 +45,8 @@ preprocess = transforms.Compose([
 
 
 def build_model():
-    """Initializes ResNet-18 architecture and loads trained weights."""
+    """Initializes ResNet-18 architecture and loads trained weights safely."""
+    print(f"Attempting to load model weights from: {MODEL_PATH}")
     model = models.resnet18(weights=None)
     num_ftrs = model.fc.in_features
     model.fc = nn.Linear(num_ftrs, 2)
@@ -38,8 +54,9 @@ def build_model():
     if os.path.exists(MODEL_PATH):
         state_dict = torch.load(MODEL_PATH, map_location=DEVICE)
         model.load_state_dict(state_dict)
+        print("Model weights loaded successfully!")
     else:
-        raise FileNotFoundError(f"Model weights not found at {MODEL_PATH}")
+        raise FileNotFoundError(f"CRITICAL: Model weights not found at any checked path. Resolved path: {MODEL_PATH}")
 
     model.to(DEVICE)
     model.eval()
