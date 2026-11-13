@@ -6,7 +6,7 @@ const app = express();
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// Middleware for parsing requests and static files
+// Middleware for parsing requests and static assets
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -14,16 +14,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Favicon 204 handler
 app.get('/favicon.ico', (req, res) => res.status(204).end());
 
-// Root Route with safe fallback
+// Root Route (Passes error and success to prevent EJS undefined crashes)
 app.get('/', (req, res) => {
-    try {
-        res.render('index');
-    } catch (err) {
-        res.redirect('/analyze');
-    }
+    res.render('index', { error: null, success: null });
 });
 
-// Mount Diagnostic Routes safely
+// Mount Diagnostic Routes
 try {
     const diagnosticRoutes = require('./routes/diagnostic');
     app.use('/', diagnosticRoutes);
@@ -31,13 +27,9 @@ try {
     console.error('Error loading diagnostic routes:', err.message);
 }
 
-// Fallback /analyze route
+// Analyze Route view handler
 app.get('/analyze', (req, res) => {
-    try {
-        res.render('index');
-    } catch (err) {
-        res.send('Analysis portal view template is loading...');
-    }
+    res.render('index', { error: null, success: null });
 });
 
 // 404 Handler
