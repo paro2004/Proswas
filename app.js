@@ -1,35 +1,48 @@
 const express = require('express');
-const expressLayouts = require('express-ejs-layouts');
 const path = require('path');
-const diagnosticRoutes = require('./routes/diagnostic');
-
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-// View engine setup
+// View Engine Setup (EJS)
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
-app.use(expressLayouts);
-app.set('layout', 'layouts/boilerplate');
 
-// Middleware
+// Middleware for parsing requests and static assets
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Mount routes
-app.use('/', diagnosticRoutes);
+// Favicon 204 handler to prevent unnecessary error logs
+app.get('/favicon.ico', (req, res) => res.status(204).end());
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).render('index', {
-        result: null,
-        formData: req.body || {},
-        error: err.message || 'An unexpected error occurred during processing.'
-    });
+// 1. Home / Root Route (Fixes the "Cannot GET /" error)
+app.get('/', (req, res) => {
+    // Render your index.ejs home page or redirect to /analyze
+    res.render('index', { title: 'Proshwas - AI Chest X-Ray Screening' });
 });
 
+// 2. Mount Diagnostic / Analysis Routes
+try {
+    const diagnosticRoutes = require('./routes/diagnostic');
+    app.use('/', diagnosticRoutes);
+} catch (err) {
+    console.log('Diagnostic routes not loaded yet or path differs:', err.message);
+}
+
+// Fallback Route for Undefined Paths (404)
+app.use((req, res, next) => {
+    res.status(404).render('error', { error: 'Page not found.' });
+});
+
+// Central Error Handling Middleware
+app.use((err, req, res, next) => {
+    console.error('Server Error:', err.stack);
+    const statusCode = err.statusCode || 500;
+    const message = err.message || 'Something went wrong on the server!';
+    res.status(statusCode).render('error', { error: message });
+});
+
+// Server Listen (Render injects PORT automatically)
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
-    console.log(`Proshwas Web Gateway running at http://localhost:${PORT}`);
+    console.log(`Proshwas Frontend Server running on port ${PORT}`);
 });
