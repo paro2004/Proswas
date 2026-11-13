@@ -14,75 +14,77 @@
         </header>
 
         <% if (typeof error !== 'undefined' && error) { %>
-            <div class="alert alert-danger" style="color: red; background: #ffe6e6; padding: 10px; margin-bottom: 15px; border-radius: 5px;">
+            <div class="alert alert-danger">
                 <%= error %>
             </div>
         <% } %>
 
         <% if (typeof success !== 'undefined' && success) { %>
-            <div class="alert alert-success" style="color: green; background: #e6ffe6; padding: 10px; margin-bottom: 15px; border-radius: 5px;">
+            <div class="alert alert-success">
                 <%= success %>
             </div>
         <% } %>
 
-        <div class="main-grid" style="display: flex; gap: 20px; flex-wrap: wrap;">
+        <div class="main-grid">
             <!-- Input Form Section -->
-            <div class="form-card" style="flex: 1; min-width: 300px; background: #f9f9f9; padding: 20px; border-radius: 8px;">
+            <div class="form-card">
                 <h2>Patient & X-ray Input</h2>
                 <form action="/analyze" method="POST" enctype="multipart/form-data">
-                    <div class="form-group" style="margin-bottom: 15px;">
-                        <label for="patient_name">Patient Name (optional)</label><br>
+                    <div class="form-group">
+                        <label for="patient_name">Patient Name (optional)</label>
                         <input type="text" id="patient_name" name="patient_name" 
                                value="<%= (typeof formData !== 'undefined' && formData && formData.patient_name) ? formData.patient_name : '' %>" 
-                               placeholder="e.g. Anita Roy" style="width: 100%; padding: 8px; margin-top: 5px;">
+                               placeholder="e.g. Anita Roy">
                     </div>
 
-                    <div class="form-group" style="margin-bottom: 15px;">
-                        <label for="age">Age</label><br>
+                    <div class="form-group">
+                        <label for="age">Age</label>
                         <input type="number" id="age" name="age" 
                                value="<%= (typeof formData !== 'undefined' && formData && formData.age) ? formData.age : '' %>" 
-                               placeholder="e.g. 54" style="width: 100%; padding: 8px; margin-top: 5px;">
+                               placeholder="e.g. 54">
                     </div>
 
-                    <div class="form-group" style="margin-bottom: 15px;">
-                        <label for="patient_id">Patient ID</label><br>
+                    <div class="form-group">
+                        <label for="patient_id">Patient ID</label>
                         <input type="text" id="patient_id" name="patient_id" 
                                value="<%= (typeof formData !== 'undefined' && formData && formData.patient_id) ? formData.patient_id : '' %>" 
-                               placeholder="e.g. 20418" style="width: 100%; padding: 8px; margin-top: 5px;">
+                               placeholder="e.g. 20418">
                     </div>
 
-                    <div class="form-group" style="margin-bottom: 15px;">
-                        <label for="file">Chest X-ray Image</label><br>
-                        <input type="file" id="file" name="file" accept="image/jpeg, image/png" required style="margin-top: 5px;">
+                    <div class="form-group">
+                        <label for="file">Chest X-ray Image</label>
+                        <input type="file" id="file" name="file" accept="image/jpeg, image/png" required>
                     </div>
 
-                    <button type="submit" class="btn-submit" style="background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Analyze X-ray</button>
+                    <button type="submit" class="btn-submit">Analyze X-ray</button>
                 </form>
             </div>
 
             <!-- Assessment Result Section -->
-            <div class="result-card" style="flex: 1; min-width: 300px; background: #f9f9f9; padding: 20px; border-radius: 8px;">
+            <div class="result-card">
                 <h2>Assessment Result</h2>
                 
                 <% if (typeof result !== 'undefined' && result && result.prediction) { %>
                     <div class="result-box">
                         <% if (result.prediction === 'PNEUMONIA') { %>
-                            <div class="badge badge-pneumonia" style="background: red; color: white; padding: 5px 10px; display: inline-block; font-weight: bold; border-radius: 4px; margin-bottom: 10px;">PNEUMONIA DETECTED</div>
+                            <div class="alert alert-danger">Needs a closer look – Signs of pneumonia detected</div>
+                            <div class="badge badge-pneumonia"><%= result.confidence_percent %>% confidence</div>
                         <% } else { %>
-                            <div class="badge badge-normal" style="background: green; color: white; padding: 5px 10px; display: inline-block; font-weight: bold; border-radius: 4px; margin-bottom: 10px;">NORMAL RADIOGRAPH</div>
+                            <div class="alert alert-success">Normal Radiograph</div>
+                            <div class="badge badge-normal"><%= result.confidence_percent %>% confidence</div>
                         <% } %>
-                        
-                        <p><strong>Confidence:</strong> <%= result.confidence_percent %>%</p>
                         
                         <% if (result.overlay_base64) { %>
-                            <h3>Grad-CAM Heatmap Analysis</h3>
-                            <div class="heatmap-container" style="margin-top: 10px;">
-                                <img src="data:image/png;base64,<%= result.overlay_base64 %>" alt="Grad-CAM Heatmap Overlay" style="max-width: 100%; border-radius: 8px;">
+                            <div class="heatmap-container">
+                                <img src="data:image/png;base64,<%= result.overlay_base64 %>" alt="Grad-CAM Heatmap Overlay">
+                                <div class="badge-overlay">Grad-CAM Heatmap Overlay</div>
                             </div>
                         <% } %>
+
+                        <a href="/" class="btn-submit" style="display: block; text-align: center; text-decoration: none; margin-top: 20px;">Analyze another scan</a>
                     </div>
                 <% } else { %>
-                    <div class="placeholder-text" style="color: #666; margin-top: 20px;">
+                    <div class="placeholder-text">
                         <p><em>Awaiting analysis...</em></p>
                         <p>Upload a chest X-ray on the left and click analyze to view diagnostics and heatmap explanations.</p>
                     </div>
