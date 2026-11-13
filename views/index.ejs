@@ -1,116 +1,303 @@
-<div class="content-wrapper">
-    <div class="cards-grid">
-        <!-- Patient & X-ray Input Card -->
-        <section class="app-card">
-            <h2 class="card-heading">Patient & X-ray Input</h2>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proshwas - AI Chest Radiograph Screening</title>
+    <style>
+        :root {
+            --primary-color: #2d6a4f;
+            --primary-dark: #1b4332;
+            --light-bg: #f8f9fa;
+            --border-color: #d8f3dc;
+            --error-bg: #f8d7da;
+            --error-color: #842029;
+            --success-bg: #d1e7dd;
+            --success-color: #0f5132;
+        }
 
-            <% if (error) { %>
-                <div class="custom-alert error-banner">
-                    <i class="bi bi-exclamation-circle-fill"></i>
-                    <span><%= error %></span>
-                </div>
-            <% } %>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-bg);
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
 
-            <form action="/analyze" method="POST" enctype="multipart/form-data" id="diagnosticForm">
-                <div class="form-group">
-                    <label class="form-label" for="patient_name">Patient name <span class="optional">(optional)</span></label>
-                    <input type="text" id="patient_name" name="patient_name" class="custom-input" 
-                           placeholder="e.g. Anita Roy" value="<%= formData.patient_name || '' %>">
-                </div>
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
 
-                <div class="form-group">
-                    <label class="form-label" for="age">Age</label>
-                    <input type="number" id="age" name="age" class="custom-input" 
-                           placeholder="e.g. 54" value="<%= formData.age || '' %>" min="1" max="120">
-                </div>
+        header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 15px;
+        }
 
-                <div class="form-group">
-                    <label class="form-label" for="patient_id">Patient ID</label>
-                    <input type="text" id="patient_id" name="patient_id" class="custom-input" 
-                           placeholder="e.g. 20418" value="<%= formData.patient_id || '' %>">
-                </div>
+        header h1 {
+            color: var(--primary-dark);
+            margin: 0;
+            font-size: 28px;
+        }
 
-                <!-- Hidden file input triggered by upload preview box -->
-                <input type="file" id="xray_image" name="xray_image" accept="image/*" class="d-none" required>
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
 
-                <!-- Preview / Upload Dropzone Box -->
-                <div class="upload-box" id="dropzoneBox" onclick="document.getElementById('xray_image').click()">
-                    <div id="previewContainer" class="<%= result ? '' : 'd-none' %>">
-                        <img id="imagePreview" 
-                             src="<%= result ? 'data:image/jpeg;base64,' + result.input_base64 : '#' %>" 
-                             alt="Input Radiograph">
+        @media (max-width: 900px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 1px solid #eaeaea;
+        }
+
+        .card h2 {
+            margin-top: 0;
+            color: var(--primary-dark);
+            font-size: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.1);
+        }
+
+        .file-upload-box {
+            border: 2px dashed var(--border-color);
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px;
+            background-color: #fafbfc;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .file-upload-box:hover {
+            background-color: #f1f8f3;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .btn-download {
+            background-color: #1d3557;
+            margin-top: 15px;
+        }
+
+        .btn-download:hover {
+            background-color: #112236;
+        }
+
+        .alert-error {
+            background-color: var(--error-bg);
+            color: var(--error-color);
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            border: 1px solid #f5c2c7;
+        }
+
+        .result-box {
+            text-align: center;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .badge-pneumonia {
+            background-color: #f8d7da;
+            color: #842029;
+            border: 1px solid #f5c2c7;
+        }
+
+        .badge-normal {
+            background-color: #d1e7dd;
+            color: #0f5132;
+            border: 1px solid #badbcc;
+        }
+
+        .image-preview-container {
+            margin-top: 15px;
+        }
+
+        .image-preview-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .awaiting {
+            color: #6c757d;
+            font-style: italic;
+            text-align: center;
+            margin-top: 80px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#2d6a4f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4.8 2.3A.3.3 0 0 1 5 2h14a.3.3 0 0 1 .2.3l-2.4 9.6a2 2 0 0 1-1.9 1.5H8.7a2 2 0 0 1-1.9-1.5L4.4 2.3z"></path>
+                <path d="M6 13.1V19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-5.9"></path>
+                <path d="M9 9h6"></path>
+            </svg>
+            <h1>Proshwas</h1>
+        </header>
+
+        <!-- Error Banner -->
+        <% if (error) { %>
+            <div class="alert-error">
+                <strong>Error:</strong> <%= error %>
+            </div>
+        <% } %>
+
+        <div class="main-grid">
+            <!-- Left Column: Input Form -->
+            <div class="card">
+                <h2>Patient & X-ray Input</h2>
+                <form action="/analyze" method="POST" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="patient_name">Patient Name (optional)</label>
+                        <input type="text" id="patient_name" name="patient_name" class="form-control" value="<%= formData.patient_name || '' %>" placeholder="e.g. Anita Roy">
                     </div>
-                    <div id="uploadPlaceholder" class="<%= result ? 'd-none' : '' %>">
-                        <i class="bi bi-cloud-arrow-up-fill upload-icon"></i>
-                        <p class="upload-text">Click to choose or drop Chest X-ray image</p>
-                        <span class="upload-subtext">JPEG, PNG formats supported</span>
+
+                    <div class="form-group">
+                        <label for="age">Age</label>
+                        <input type="number" id="age" name="age" class="form-control" value="<%= formData.age || '' %>" placeholder="e.g. 54">
                     </div>
-                </div>
 
-                <button type="submit" class="submit-btn" id="submitBtn">
-                    <span id="btnText">Analyze X-ray</span>
-                    <span id="btnSpinner" class="spinner-border spinner-border-sm d-none ms-2" role="status"></span>
-                </button>
-            </form>
-        </section>
+                    <div class="form-group">
+                        <label for="patient_id">Patient ID</label>
+                        <input type="text" id="patient_id" name="patient_id" class="form-control" value="<%= formData.patient_id || '' %>" placeholder="e.g. 20418">
+                    </div>
 
-        <!-- Assessment Result Card -->
-        <section class="app-card">
-            <h2 class="card-heading">Assessment Result</h2>
+                    <div class="form-group">
+                        <label>Chest X-ray Image</label>
+                        <div class="file-upload-box" onclick="document.getElementById('xray_image').click();">
+                            <p style="margin: 0 0 5px 0; color: var(--primary-color); font-weight: bold;">📁 Click to upload or drop Chest X-ray image</p>
+                            <span style="font-size: 12px; color: #6c757d;">JPEG, PNG formats supported</span>
+                            <input type="file" id="xray_image" name="xray_image" accept="image/*" style="display: none;" onchange="updateFileName(this)">
+                        </div>
+                        <p id="file-name-display" style="font-size: 13px; color: #495057; margin-top: 8px; font-weight: 500;"></p>
+                    </div>
 
-            <% if (result) { %>
-                <% const isPneumonia = result.prediction === 'PNEUMONIA'; %>
+                    <button type="submit" class="btn">Analyze X-ray</button>
+                </form>
+            </div>
 
-                <!-- Diagnosis Banner -->
-                <div class="status-banner <%= isPneumonia ? 'banner-pneumonia' : 'banner-normal' %>">
-                    <div class="status-icon-wrapper">
-                        <% if (isPneumonia) { %>
-                            <i class="bi bi-exclamation-circle-fill status-icon-pneumonia"></i>
+            <!-- Right Column: Assessment Result -->
+            <div class="card">
+                <h2>Assessment Result</h2>
+                <% if (result) { %>
+                    <div class="result-box">
+                        <% if (result.prediction === 'PNEUMONIA') { %>
+                            <div class="badge badge-pneumonia">
+                                ⚠ Needs a closer look – Signs of pneumonia detected
+                            </div>
                         <% } else { %>
-                            <i class="bi bi-check-circle-fill status-icon-normal"></i>
+                            <div class="badge badge-normal">
+                                ✔ Normal – No pneumonia signs detected
+                            </div>
                         <% } %>
+
+                        <p style="font-weight: 600; color: #495057; margin-bottom: 15px;">
+                            Confidence Score: <span style="color: var(--primary-dark);"><%= result.confidence_percent %>%</span>
+                        </p>
+
+                        <% if (result.overlay_base64) { %>
+                            <div class="image-preview-container">
+                                <p style="font-size: 13px; color: #6c757d; margin-bottom: 5px;">Grad-CAM Heatmap Overlay</p>
+                                <img src="data:image/png;base64,<%= result.overlay_base64 %>" alt="Grad-CAM Heatmap Overlay">
+                            </div>
+                        <% } %>
+
+                        <!-- Download PDF Report Button -->
+                        <a href="/download-report" class="btn btn-btn-download btn-download">
+                            📥 Download PDF Diagnostic Report
+                        </a>
                     </div>
-                    <div class="status-text-wrapper">
-                        <h3 class="status-title">
-                            <%= isPneumonia ? 'Needs a closer look - Signs of pneumonia detected' : 'Normal - No signs of pneumonia detected' %>
-                        </h3>
+                <% } else { %>
+                    <div class="awaiting">
+                        <p>Awaiting analysis</p>
+                        <span style="font-size: 13px;">Upload an X-ray on the left and click analyze to view diagnostics and heatmap explanations.</span>
                     </div>
-                </div>
-
-                <!-- Confidence Badge -->
-                <div class="confidence-pill <%= isPneumonia ? 'confidence-pneumonia' : 'confidence-normal' %>">
-                    <%= result.confidence_percent %>% confidence
-                </div>
-
-                <!-- Grad-CAM Heatmap Image Container -->
-                <div class="heatmap-card">
-                    <div class="heatmap-wrapper">
-                        <img src="data:image/jpeg;base64,<%= result.overlay_base64 %>" alt="Grad-CAM Heatmap Overlay" class="heatmap-img">
-                        <span class="heatmap-pill">Grad-CAM Heatmap Overlay</span>
-                    </div>
-                </div>
-
-                <!-- Analyze Another Scan Button -->
-                <div class="mt-4 text-center">
-                    <a href="/" class="reset-btn">
-                        Analyze another scan
-                    </a>
-                </div>
-
-            <% } else { %>
-                <!-- Empty Placeholder (Lungs sign removed) -->
-                <div class="empty-state">
-                    <p class="empty-title">Awaiting analysis</p>
-                </div>
-            <% } %>
-        </section>
+                <% } %>
+            </div>
+        </div>
     </div>
 
-    <!-- Note for the Doctor Bottom Card -->
-    <div class="doctor-note-card">
-        <h4 class="doctor-note-title">A note for the doctor</h4>
-        <p class="doctor-note-text">
-            Please note: This result comes from an AI model and is intended as a decision-support aid, not a definitive diagnosis. Always verify with your own clinical judgment, patient history, and further diagnostic tests.
-        </p>
-    </div>
-</div>
+    <script>
+        function updateFileName(input) {
+            const display = document.getElementById('file-name-display');
+            if (input.files && input.files[0]) {
+                display.textContent = "Selected file: " + input.files[0].name;
+            }
+        }
+    </script>
+</body>
+</html>
