@@ -11,9 +11,10 @@ from torchvision import models, transforms
 
 app = Flask(__name__)
 
-# Configuration
+# Configuration & Robust Model Path Resolution
 DEVICE = torch.device('cpu')
-MODEL_PATH = os.environ.get('MODEL_PATH', 'pneumonia_resnet18.pth')
+DEFAULT_MODEL_PATH = os.path.join(os.path.dirname(__file__), 'pneumonia_resnet18.pth')
+MODEL_PATH = os.environ.get('MODEL_PATH', DEFAULT_MODEL_PATH)
 CLASS_NAMES = ['NORMAL', 'PNEUMONIA']
 CONFIDENCE_THRESHOLD = 0.60  # Calibrated threshold to reduce false positives
 
