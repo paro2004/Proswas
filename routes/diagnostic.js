@@ -24,17 +24,24 @@ router.post('/analyze', upload.single('file'), async (req, res) => {
             contentType: req.file.mimetype,
         });
 
-        // 90-second timeout to handle Render cold starts
         const response = await axios.post(`${AI_URL}/predict`, formData, {
             headers: { ...formData.getHeaders() },
             timeout: 90000 
         });
 
+        // Pass patient metadata alongside result so the report can use it
+        const analysisResult = {
+            ...response.data,
+            patient_name: req.body.patient_name || 'N/A',
+            age: req.body.age || 'N/A',
+            patient_id: req.body.patient_id || 'N/A'
+        };
+
         return res.render('index', {
             error: null,
             success: 'Analysis completed successfully.',
             formData: req.body || {},
-            result: response.data
+            result: analysisResult
         });
 
     } catch (error) {
