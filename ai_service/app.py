@@ -16,7 +16,6 @@ DEVICE = torch.device('cpu')
 CLASS_NAMES = ['NORMAL', 'PNEUMONIA']
 CONFIDENCE_THRESHOLD = 0.60
 
-# Check all possible locations for your exact weights file name: resnet18_pneumonia.pth
 possible_model_paths = [
     os.path.join(os.path.dirname(__file__), 'resnet18_pneumonia.pth'),
     'resnet18_pneumonia.pth',
@@ -44,7 +43,6 @@ def ensure_model_weights():
 
 ensure_model_weights()
 
-# Preprocessing pipeline
 preprocess = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
@@ -57,7 +55,14 @@ preprocess = transforms.Compose([
 def build_model():
     model = models.resnet18(weights=None)
     num_ftrs = model.fc.in_features
-    model.fc = nn.Linear(num_ftrs, 2)
+    
+    # Match the exact Sequential architecture used during model training
+    model.fc = nn.Sequential(
+        nn.Linear(num_ftrs, 512),
+        nn.ReLU(),
+        nn.Dropout(0.5),
+        nn.Linear(512, 2)
+    )
 
     if os.path.exists(MODEL_PATH):
         state_dict = torch.load(MODEL_PATH, map_location=DEVICE)
