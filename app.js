@@ -14,9 +14,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Favicon 204 handler
 app.get('/favicon.ico', (req, res) => res.status(204).end());
 
-// Root Route (Passes error and success to prevent EJS undefined crashes)
+// Root Route
 app.get('/', (req, res) => {
-    res.render('index', { error: null, success: null });
+    res.render('index', { error: null, success: null, formData: {} });
 });
 
 // Mount Diagnostic Routes
@@ -29,7 +29,7 @@ try {
 
 // Analyze Route view handler
 app.get('/analyze', (req, res) => {
-    res.render('index', { error: null, success: null });
+    res.render('index', { error: null, success: null, formData: {} });
 });
 
 // 404 Handler
