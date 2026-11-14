@@ -15,7 +15,6 @@
                 <i class="fa-solid fa-lungs brand-icon"></i>
                 <h1 class="brand-title">Proshwas</h1>
             </div>
-            <!-- Change 1: Green text and shifted slightly to the right -->
             <p style="color: var(--green-dark); margin-top: 6px; margin-left: 12px; font-size: 1.05rem; font-weight: 600;">AI-Powered Chest Radiograph Analysis & Diagnostic Assistant</p>
         </div>
         <hr class="header-divider">
@@ -76,7 +75,6 @@
                         </div>
                         <input type="file" id="file" name="file" accept="image/jpeg, image/png" style="display: none;" onchange="previewImage(event)" required>
 
-                        <!-- Change 3: Analyze button without stethoscope icon -->
                         <button type="submit" class="submit-btn">
                             Analyze X-ray
                         </button>
@@ -137,7 +135,7 @@
                         </div>
 
                     <% } else { %>
-                        <!-- Change 2: Empty state with subtitle text removed -->
+                        <!-- Empty State -->
                         <div class="empty-state">
                             <div class="empty-title">Awaiting analysis...</div>
                         </div>
@@ -156,8 +154,13 @@
         </div>
     </main>
 
-    <!-- Client-side image preview script -->
+    <!-- Client-side scripts -->
     <script>
+        // Automatically wake up the backend the moment the frontend page loads!
+        window.addEventListener('DOMContentLoaded', () => {
+            fetch('https://proshwas-ai.onrender.com/').catch(() => {});
+        });
+
         function previewImage(event) {
             const file = event.target.files[0];
             if (file) {

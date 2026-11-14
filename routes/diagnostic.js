@@ -4,11 +4,24 @@ const multer = require('multer');
 const axios = require('axios');
 const FormData = require('form-data');
 
-// Configure multer memory storage
 const upload = multer({ storage: multer.memoryStorage() });
-
-// Explicitly point to your live Render AI backend URL
 const AI_URL = process.env.AI_SERVICE_URL || 'https://proshwas-ai.onrender.com';
+
+// Helper function to retry requests if the backend is experiencing a cold start
+async function postWithRetry(url, formData, headers, retries = 2, delay = 4000) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            return await axios.post(url, formData, {
+                headers: headers,
+                timeout: 120000 // 2-minute timeout for heavy PyTorch model cold starts
+            });
+        } catch (error) {
+            console.log(`Attempt ${i + 1} failed. Retrying in ${delay/1000}s (Backend may be waking up)...`);
+            if (i === retries - 1) throw error;
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
+}
 
 router.post('/analyze', upload.single('file'), async (req, res) => {
     try {
@@ -27,15 +40,11 @@ router.post('/analyze', upload.single('file'), async (req, res) => {
             contentType: req.file.mimetype,
         });
 
-        // Forward request directly to Python Flask AI backend /predict endpoint
-        const response = await axios.post(`${AI_URL}/predict`, formData, {
-            headers: {
-                ...formData.getHeaders()
-            },
-            timeout: 90000 // 90-second timeout for Render cold starts
+        // Use auto-retry wrapper
+        const response = await postWithRetry(`${AI_URL}/predict`, formData, {
+            ...formData.getHeaders()
         });
 
-        // Attach user metadata back for rendering
         const analysisResult = {
             ...response.data,
             patient_name: req.body.patient_name || 'N/A',
@@ -53,10 +62,8 @@ router.post('/analyze', upload.single('file'), async (req, res) => {
     } catch (error) {
         console.error('AI Service Communication Error:', error.message);
         
-        const errorMsg = error.response?.data?.error || 'Failed to connect to AI backend. Please ensure the AI service is awake and try again.';
-        
         return res.render('index', {
-            error: errorMsg,
+            error: 'AI engine is waking up from sleep mode. Please wait a moment and click Analyze again.',
             success: null,
             formData: req.body || {},
             result: null
